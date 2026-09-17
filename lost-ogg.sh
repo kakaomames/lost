@@ -81,7 +81,7 @@ mkdir -p extracted_voice/Voice
 # cp -rfv $(find . | grep Voice) extracted_voice/Voice/
 echo "Next..."
 
-
+echo "PY Start!!" > pyLog.txt
 # `./extracted_voice/` 直下の `.unity3d` ファイルを一括処理
 for bundle in ./extracted_voice/*.unity3d; do
     [ -f "$bundle" ] || continue
@@ -99,7 +99,8 @@ for bundle in ./extracted_voice/*.unity3d; do
     mkdir -p "extracted_voice/$category/$type"
 
     echo "3. 既存の動いている Python スクリプトをそのまま実行"
-    python extract_direct_slice.py "$bundle"
+    
+    python extract_direct_slice.py "$bundle" >> pyLog.txt
 
     echo "4. 生成された WAV ファイルを該当カテゴリフォルダへ移動"
     mv -f ./extracted_voice/*.wav "extracted_voice/$category/$type/" 2>/dev/null
