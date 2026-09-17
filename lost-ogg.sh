@@ -45,29 +45,34 @@ while read -r hash path; do
     -H "Accept-Encoding: deflate, gzip" \
     -H "X-Unity-Version: 6000.0.58f2" \
     --output "extracted_voice/$name" >> log.txt &
+  
+
+
+   # 4. 16進数（0-9, a-f）の現在地を計算
   hex_char=$(echo "${hash:0:1}" | tr 'A-F' 'a-f')
-    
-  echo "$name" >> ogg-list.txt
+  
   case "$hex_char" in
     0) hex_num=1 ;; 1) hex_num=2 ;; 2) hex_num=3 ;; 3) hex_num=4 ;;
     4) hex_num=5 ;; 5) hex_num=6 ;; 6) hex_num=7 ;; 7) hex_num=8 ;;
     8) hex_num=9 ;; 9) hex_num=10 ;; a) hex_num=11 ;; b) hex_num=12 ;;
     c) hex_num=13 ;; d) hex_num=14 ;; e) hex_num=15 ;; f) hex_num=16 ;;
-    *) hex_num="?" ;;
+    *) hex_num=0 ;;
   esac
 
-  # 5. 進捗バー（パーセント）の計算
-  PERCENT=$((CURRENT_COUNT * 100 / TOTAL_ITEMS))
-  BAR_WIDTH=20
-  FILLED_WIDTH=$((PERCENT * BAR_WIDTH / 100))
+  # 5. 【修正】全体件数ではなく、16進数(16分割)を基準にメーターを計算！
+  # 16マス中、今何マス目か
+  BAR_WIDTH=16  # バーの最大幅を16文字にすると1マス＝1進数になって完璧に揃います
+  FILLED_WIDTH=$hex_num
   EMPTY_WIDTH=$((BAR_WIDTH - FILLED_WIDTH))
+  
+  # バーの組み立て
   BAR=$(printf "%${FILLED_WIDTH}s" | tr ' ' '=')
-  ARROW=""; [ $FILLED_WIDTH -lt $BAR_WIDTH ] && ARROW=">"
+  ARROW=""
+  [ $FILLED_WIDTH -lt $BAR_WIDTH ] && ARROW=">"
   SPACES=$(printf "%${EMPTY_WIDTH}s" | tr ' ' ' ')
 
-  # 6. 【1行表示】 進捗バーの横に 16進インジケータ (例: [Hex: c /16]) を表示！
-  printf "\rProcessing: [%s%s%s] %d%% (%d/%d) [Hex: %s (%s/16)]" "$BAR" "$ARROW" "$SPACES" "$PERCENT" "$CURRENT_COUNT" "$TOTAL_ITEMS" "$hex_char" "$hex_num"
-
+  # 6. 【1行表示】 メーターの横に現在のハッシュ頭文字と、何マス目かを表示！
+  printf "\rProcessing: [%s%s%s] (Hex: %s -> %d/16)" "$BAR" "$ARROW" "$SPACES" "$hex_char" "$hex_num"
 
 done < audio_list_strict.txt
 
@@ -82,6 +87,12 @@ mkdir -p extracted_voice/Voice
 echo "Next..."
 
 echo "PY Start!!" > pyLog.txt
+
+# 1. 総ファイル数をカウント
+TOTAL_BUNDLES=\$(find ./extracted_voice -maxdepth 1 -name "*.unity3d" | wc -l)
+CURRENT_BUNDLE=0
+MAX_PARALLEL=8  
+
 # `./extracted_voice/` 直下の `.unity3d` ファイルを一括処理
 for bundle in ./extracted_voice/*.unity3d; do
     [ -f "$bundle" ] || continue
@@ -100,14 +111,38 @@ for bundle in ./extracted_voice/*.unity3d; do
 
     echo "3. 既存の動いている Python スクリプトをそのまま実行"
     
-    python extract_direct_slice.py "$bundle" >> pyLog.txt
+    (
+    
+    python extract_direct_slice.py "\$bundle" >> pyLog.txt 2>&1
+        
+        # 生成された WAV を即座にフォルダへ退避（他の中央処理と衝突させない）
+        # カレント直下、またはカレントの周りから安全に移動
+        mv -f *.wav "\$target_dir/" >> pyLog.txt 2>&1
+        mv -f ./extracted_voice/*.wav "\$target_dir/" >> pyLog.txt 2>&1
+        
+        # このアセット用の一時ファイルを裏で即座にクリーンアップ
+        rm -rf _temp_fsb *.fsb *.ogg 2>/dev/null
+    ) & # 👈 最後にアンパサンドを付けて裏に放り投げる！
 
-    echo "4. 生成された WAV ファイルを該当カテゴリフォルダへ移動"
-    mv -f ./extracted_voice/*.wav "extracted_voice/$category/$type/" 2>/dev/null
+    # 4. 進捗バーの計算と1行表示
+    PERCENT=\$((CURRENT_BUNDLE * 100 / TOTAL_BUNDLES))
+    BAR_WIDTH=20
+    FILLED_WIDTH=\$((PERCENT * BAR_WIDTH / 100))
+    EMPTY_WIDTH=\$((BAR_WIDTH - FILLED_WIDTH))
+    BAR=\((printf "\%\){FILLED_WIDTH}s" | tr ' ' '=')
+    ARROW=""; [ \(FILLED_WIDTH -lt\)BAR_WIDTH ] && ARROW=">"
+    SPACES=\((printf "\%\){EMPTY_WIDTH}s" | tr ' ' ' ')
 
-    echo "5. 中間生成された FSB や一時ファイルのクリーンアップ"
-    rm -rf _temp_fsb *.fsb *.ogg 2>/dev/null
+    printf "\rExtracting: [%s%s%s] %d%% (%d/%d) -> %s" "\$BAR" "ARROW" "SPACES" "PERCENT" "CURRENT_BUNDLE" "\(TOTAL_BUNDLES" "\)filename"
+
+    # 5. 並列数の制御（指定した制限数を超えたら、裏の処理が空くまで待つ）
+    # ジョブ数が制限に達したら1ジョブ終わるまで待つ（wait -n は最新のUbuntuで使えます）
+    if [ (jobs -r | wc -l) -ge MAX_PARALLEL ]; then
+        wait -n 2>/dev/null || sleep 0.1
+    fi
 done
+
+wait
 
 echo "🎉 全アセットの抽出・分類・変換ミッション完了！"
 
