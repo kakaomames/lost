@@ -12,6 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      
+
+      # 👇 これを一番最初に追加！不要なツールを削除して約30GB以上の空きを作ります
+      - name: Free Disk Space (Reclaim ~30GB)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: false
+          large-packages: true
+          swap-storage: true
+
       - name: Start
         run: |
           echo "starting..."
