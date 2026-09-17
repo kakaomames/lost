@@ -68,12 +68,12 @@ jobs:
 
       - name: Deliver Spoils
         run: |
-          git config --global user.name 'Gemini-Bot'
-          git config --global user.email 'bot@gemini.team' 
-          git add . | true
+          # git config --global user.name 'Gemini-Bot'
+          # git config --global user.email 'bot@gemini.team' 
+          # git add . | true
           # メッセージをシンプルにしてクォート事故を防止！
-          git commit -m "Mission_Update_[Skip CI]" || echo "No changes" 
-          git push | true
+          # git commit -m "Mission_Update_[Skip CI]" || echo "No changes" 
+          # git push | true
       - name: Upload Spoils as Artifact
         uses: actions/upload-artifact@v4
         with:
