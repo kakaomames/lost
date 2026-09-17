@@ -1,0 +1,38 @@
+name: Lost ogg
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract-and-rescue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Security Check
+        run: |
+          echo "starting..."
+
+      - name: Create Docker Compose File
+        run: |
+          bash lost-ogg.sh
+
+      - name: Deploy Invidious Stack
+        run: |
+          
+          echo "ending..."
+
+      - name: Python Mission Control (With Retries)
+        run: |
+          echo "kkkk"
+
+
+
+      - name: Deliver Spoils
+        run: |
+          git config --global user.name 'Gemini-Bot'
+          git config --global user.email 'bot@gemini.team'
+          git add .
+          # メッセージをシンプルにしてクォート事故を防止！
+          git commit -m "Mission_Update_[Skip CI]" || echo "No changes"
+          git push
