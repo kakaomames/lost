@@ -14,6 +14,7 @@ echo "-----OGG lost Start-----" > ogg-list.txt
 
 # 抽出したリストから1行ずつ読み込んで処理
 mkdir -p extracted_voice
+echo "Downloading: $name ..." > log.txt
 
 while read -r hash path; do
   [ -z "$hash" ] && continue
@@ -35,6 +36,7 @@ while read -r hash path; do
   # 3. URLの組み立てとダウンロード実行
   URL="${BASE_URL}${hash}"
   echo "Downloading: $name ($URL)..."
+  
 
   curl -L "$URL" \
     -H "Host: d3s38hlip7moa.cloudfront.net" \
@@ -42,7 +44,7 @@ while read -r hash path; do
     -H "Accept: */*" \
     -H "Accept-Encoding: deflate, gzip" \
     -H "X-Unity-Version: 6000.0.58f2" \
-    --output "extracted_voice/$name" &
+    --output "extracted_voice/$name" >> log.txt &
   hex_char=$(echo "${hash:0:1}" | tr 'A-F' 'a-f')
     
   echo "$name" >> ogg-list.txt
