@@ -38,7 +38,7 @@ while read -r hash path; do
   echo "Downloading: $name ($URL)..."
   
 
-  curl -L "$URL" \
+  curl -L -s "$URL" \
     -H "Host: d3s38hlip7moa.cloudfront.net" \
     -H "User-Agent: UnityPlayer/6000.0.58f2 (UnityWebRequest/1.0, libcurl/8.10.1-DEV)" \
     -H "Accept: */*" \
