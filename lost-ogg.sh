@@ -76,7 +76,7 @@ for bundle in ./extracted_voice/*.unity3d; do
     python extract_direct_slice.py "$bundle"
 
     echo "4. 生成された WAV ファイルを該当カテゴリフォルダへ移動"
-    mv -f *.wav "extracted_voice/$category/$type/" 2>/dev/null
+    mv -f ./extracted_voice/*.wav "extracted_voice/$category/$type/" 2>/dev/null
 
     echo "5. 中間生成された FSB や一時ファイルのクリーンアップ"
     rm -rf _temp_fsb *.fsb *.ogg 2>/dev/null
