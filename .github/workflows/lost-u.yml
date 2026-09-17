@@ -2,6 +2,9 @@ name: Lost ogg
 
 on:
   workflow_dispatch:
+  
+permissions:       # 👈 これを追加
+  contents: write  # 👈 これを追加
 
 jobs:
   extract-and-rescue:
