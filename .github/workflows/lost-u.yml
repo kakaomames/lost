@@ -16,10 +16,30 @@ jobs:
         run: |
           echo "starting..."
 
-      - name: Logic
+
+      - name: Set up Python & Install UnityPy
         run: |
           python -m pip install --upgrade pip
           pip install UnityPy
+
+      # 👇 ここに vgmstream のLinux用バイナリを落として設置するステップを追加！
+      - name: Install vgmstream
+        run: |
+          mkdir -p vgmstream_bin
+          cd vgmstream_bin
+          # 公式の最新Linuxビルド（CLI版）をダウンロード
+          curl -L -o vgmstream-cli.zip https://github.com
+          # zipを解凍して実行権限を与える
+          unzip vgmstream-cli.zip
+          chmod +x vgmstream-cli
+          # コマンド名「vgmstream」として呼び出せるようにシンボリックリンクを作成
+          ln -s vgmstream-cli vgmstream
+          # 実行パス(PATH)をGitHub Actionsの環境変数に追加して、どこからでも呼び出せるようにする
+          echo "$(pwd)" >> $GITHUB_PATH
+
+
+      - name: Logic
+        run: |
           bash lost-ogg.sh
 
       - name: end
@@ -36,8 +56,14 @@ jobs:
       - name: Deliver Spoils
         run: |
           git config --global user.name 'Gemini-Bot'
-          git config --global user.email 'bot@gemini.team'
-          git add .
+          git config --global user.email 'bot@gemini.team' 
+          git add . | true
           # メッセージをシンプルにしてクォート事故を防止！
-          git commit -m "Mission_Update_[Skip CI]" || echo "No changes"
-          git push
+          git commit -m "Mission_Update_[Skip CI]" || echo "No changes" 
+          git push | true
+      - name: Upload Spoils as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Extracted-WAVs  # ダウンロードするときのZIP名
+          path: extracted_voice/  # 仕分けられたフォルダを丸ごとZIP化
+          retention-days: 1     # 保管期間（1日で自動削除）
