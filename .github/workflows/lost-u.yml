@@ -28,7 +28,7 @@ jobs:
           mkdir -p vgmstream_bin
           cd vgmstream_bin
           # 公式の最新Linuxビルド（CLI版）をダウンロード
-          curl -L -o vgmstream-cli.zip https://github.com
+          curl -L -o vgmstream-cli.zip https://github.com/vgmstream/vgmstream/releases/download/r2117/vgmstream-linux.zip
           # zipを解凍して実行権限を与える
           unzip vgmstream-cli.zip
           chmod +x vgmstream-cli
