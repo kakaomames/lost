@@ -5,6 +5,9 @@ jq -r '.AssetInfos[] | select(.AssetPaths[] | test("/(Audio|Voice|BGM|Sound)/"; 
 
 BASE_URL="https://d3s38hlip7moa.cloudfront.net/assetbundle/android/20260907_111618/mCoVhrLm/"
 processed_hashes=""
+TOTAL_ITEMS=$(wc -l < audio_list_strict.txt)
+CURRENT_COUNT=0
+CONCURRENT_LIMIT=10 # 同時ダウンロード数（安全かつ爆速な10並列）
 
 echo "-----OGG lost Start-----"
 echo "-----OGG lost Start-----" > ogg-list.txt
@@ -39,9 +42,30 @@ while read -r hash path; do
     -H "Accept: */*" \
     -H "Accept-Encoding: deflate, gzip" \
     -H "X-Unity-Version: 6000.0.58f2" \
-    --output "extracted_voice/$name"
+    --output "extracted_voice/$name" &
+  hex_char=$(echo "${hash:0:1}" | tr 'A-F' 'a-f')
     
   echo "$name" >> ogg-list.txt
+  case "$hex_char" in
+    0) hex_num=1 ;; 1) hex_num=2 ;; 2) hex_num=3 ;; 3) hex_num=4 ;;
+    4) hex_num=5 ;; 5) hex_num=6 ;; 6) hex_num=7 ;; 7) hex_num=8 ;;
+    8) hex_num=9 ;; 9) hex_num=10 ;; a) hex_num=11 ;; b) hex_num=12 ;;
+    c) hex_num=13 ;; d) hex_num=14 ;; e) hex_num=15 ;; f) hex_num=16 ;;
+    *) hex_num="?" ;;
+  esac
+
+  # 5. 進捗バー（パーセント）の計算
+  PERCENT=$((CURRENT_COUNT * 100 / TOTAL_ITEMS))
+  BAR_WIDTH=20
+  FILLED_WIDTH=$((PERCENT * BAR_WIDTH / 100))
+  EMPTY_WIDTH=$((BAR_WIDTH - FILLED_WIDTH))
+  BAR=$(printf "%${FILLED_WIDTH}s" | tr ' ' '=')
+  ARROW=""; [ $FILLED_WIDTH -lt $BAR_WIDTH ] && ARROW=">"
+  SPACES=$(printf "%${EMPTY_WIDTH}s" | tr ' ' ' ')
+
+  # 6. 【1行表示】 進捗バーの横に 16進インジケータ (例: [Hex: c /16]) を表示！
+  printf "\rProcessing: [%s%s%s] %d%% (%d/%d) [Hex: %s (%s/16)]" "$BAR" "$ARROW" "$SPACES" "$PERCENT" "$CURRENT_COUNT" "$TOTAL_ITEMS" "$hex_char" "$hex_num"
+
 
 done < audio_list_strict.txt
 
