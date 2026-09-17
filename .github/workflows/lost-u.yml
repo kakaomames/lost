@@ -9,20 +9,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Security Check
+      - name: Start
         run: |
           echo "starting..."
 
-      - name: Create Docker Compose File
+      - name: bash
         run: |
           bash lost-ogg.sh
 
-      - name: Deploy Invidious Stack
+      - name: end
         run: |
           
           echo "ending..."
 
-      - name: Python Mission Control (With Retries)
+      - name: 他意があるから残す
         run: |
           echo "kkkk"
 
