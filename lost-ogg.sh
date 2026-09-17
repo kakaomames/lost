@@ -89,7 +89,7 @@ echo "Next..."
 echo "PY Start!!" > pyLog.txt
 
 # 1. 総ファイル数をカウント
-TOTAL_BUNDLES=\$(find ./extracted_voice -maxdepth 1 -name "*.unity3d" | wc -l)
+TOTAL_BUNDLES=$(find ./extracted_voice -maxdepth 1 -name "*.unity3d" | wc -l)
 CURRENT_BUNDLE=0
 MAX_PARALLEL=8  
 
@@ -102,42 +102,42 @@ for bundle in ./extracted_voice/*.unity3d; do
     echo "=== 処理中: $filename"
     echo "=========================================="
 
-    # 1. ファイル名から1番目のハイフンまでのカテゴリ文字列を取得 (例: Voice-15015-40.unity3d -> Voice)
+    # 1. カテゴリとタイプの抽出
     category=$(echo "$filename" | cut -d'-' -f1)
     type=$(echo "$filename" | cut -d'-' -f2)
+    target_dir="extracted_voice/$category/$type"
 
-    echo "2. カテゴリ用フォルダを準備"
-    mkdir -p "extracted_voice/$category/$type"
+    # 2. カテゴリ用フォルダを準備
+    mkdir -p "$target_dir"
 
-    echo "3. 既存の動いている Python スクリプトをそのまま実行"
-    
+    # 3. バックグラウンド(&)で並列処理を実行！
     (
-    
-    python extract_direct_slice.py "\$bundle" >> pyLog.txt 2>&1
+        python extract_direct_slice.py "$bundle" >> pyLog.txt 2>&1
         
-        # 生成された WAV を即座にフォルダへ退避（他の中央処理と衝突させない）
-        # カレント直下、またはカレントの周りから安全に移動
-        mv -f *.wav "\$target_dir/" >> pyLog.txt 2>&1
-        mv -f ./extracted_voice/*.wav "\$target_dir/" >> pyLog.txt 2>&1
+        # 生成された WAV を該当フォルダへ移動
+        mv -f *.wav "$target_dir/" >> pyLog.txt 2>&1
+        mv -f ./extracted_voice/*.wav "$target_dir/" >> pyLog.txt 2>&1
         
-        # このアセット用の一時ファイルを裏で即座にクリーンアップ
+        # クリーンアップ
         rm -rf _temp_fsb *.fsb *.ogg 2>/dev/null
-    ) & # 👈 最後にアンパサンドを付けて裏に放り投げる！
+    ) &
 
-    # 4. 進捗バーの計算と1行表示
-    PERCENT=\$((CURRENT_BUNDLE * 100 / TOTAL_BUNDLES))
+    # 4. 進捗バーの計算と1行表示 (\ を一切使わないピュアな計算)
+    PERCENT=$((CURRENT_BUNDLE * 100 / TOTAL_BUNDLES))
     BAR_WIDTH=20
-    FILLED_WIDTH=\$((PERCENT * BAR_WIDTH / 100))
-    EMPTY_WIDTH=\$((BAR_WIDTH - FILLED_WIDTH))
-    BAR=\((printf "\%\){FILLED_WIDTH}s" | tr ' ' '=')
-    ARROW=""; [ \(FILLED_WIDTH -lt\)BAR_WIDTH ] && ARROW=">"
-    SPACES=\((printf "\%\){EMPTY_WIDTH}s" | tr ' ' ' ')
+    FILLED_WIDTH=$((PERCENT * BAR_WIDTH / 100))
+    EMPTY_WIDTH=$((BAR_WIDTH - FILLED_WIDTH))
+    
+    BAR=$(printf "%${FILLED_WIDTH}s" | tr ' ' '=')
+    ARROW=""
+    [ $FILLED_WIDTH -lt $BAR_WIDTH ] && ARROW=">"
+    SPACES=$(printf "%${EMPTY_WIDTH}s" | tr ' ' ' ')
 
-    printf "\rExtracting: [%s%s%s] %d%% (%d/%d) -> %s" "\$BAR" "ARROW" "SPACES" "PERCENT" "CURRENT_BUNDLE" "\(TOTAL_BUNDLES" "\)filename"
+    # 1行で進捗と現在のファイル名を表示
+    printf "\rExtracting: [%s%s%s] %d%% (%d/%d) -> %s" "$BAR" "$ARROW" "$SPACES" "$PERCENT" "$CURRENT_BUNDLE" "$TOTAL_BUNDLES" "$filename"
 
-    # 5. 並列数の制御（指定した制限数を超えたら、裏の処理が空くまで待つ）
-    # ジョブ数が制限に達したら1ジョブ終わるまで待つ（wait -n は最新のUbuntuで使えます）
-    if [ (jobs -r | wc -l) -ge MAX_PARALLEL ]; then
+    # 5. 並列数の制御（MAX_PARALLELを超えたら待つ）
+    if [ $(jobs -r | wc -l) -ge $MAX_PARALLEL ]; then
         wait -n 2>/dev/null || sleep 0.1
     fi
 done
