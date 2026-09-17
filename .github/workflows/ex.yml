@@ -1,0 +1,55 @@
+name: Split Large Artifact
+
+on:
+  # 手動実行、または1つ目のワークフロー完了後に自動実行したい場合は workflow_run を設定します
+  workflow_dispatch: 
+
+permissions:       # 👈 これを追加
+  contents: write  # 👈 これを追加
+
+jobs:
+  split-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+    
+      # 👇 これを一番最初に追加！不要なツールを削除して約30GB以上の空きを作ります
+      - name: Free Disk Space (Reclaim ~30GB)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: false
+          large-packages: true
+          swap-storage: true
+
+          
+      # 1. 1つ目のワークフローから17GBの巨大成果物（Extracted-WAVs）をダウンロード
+      # ※ github.com/kakaomames/lost の同じリポジトリ内であればこれで落とせます
+      - name: Download Huge Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Extracted-WAVs
+          path: temp_extracted/
+
+      # 2. フォルダ構造の確認と、アップロード用の仕分け（必要に応じて）
+      # temp_extracted/extracted_voice/ の中に BGM と Voice があると想定しています
+      - name: Check Folder Structure
+        run: |
+          ls -R temp_extracted/
+
+      # 3. BGMフォルダだけを個別のアーティファクトとしてアップロード
+      - name: Upload BGM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifact-BGM
+          path: temp_extracted/extracted_voice/BGM/
+          retention-days: 1
+
+      # 4. Voiceフォルダだけを個別のアーティファクトとしてアップロード
+      - name: Upload Voice Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifact-Voice
+          path: temp_extracted/extracted_voice/Voice/
+          retention-days: 1
