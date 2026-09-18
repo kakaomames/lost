@@ -32,7 +32,7 @@ jobs:
           echo "Downloading artifact from run 35188198230..."
           
           # 修正ポイント: -R でリポジトリを明示し、引数の位置を修正しました
-          gh run download 35188198230 -R kakaomames/lost --name "Extracted-WAVs" --dir temp_extracted/
+          curl -L "https://github.com/kakaomames/lost/actions/runs/35188198230/artifacts/10485906213" -o temp_extracted/
 
       # 3. フォルダ構造の確認
       - name: Check Folder Structure
