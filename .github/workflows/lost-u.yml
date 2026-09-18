@@ -74,6 +74,24 @@ jobs:
           # メッセージをシンプルにしてクォート事故を防止！
           # git commit -m "Mission_Update_[Skip CI]" || echo "No changes" 
           # git push | true
+
+
+            # 4. BGMフォルダだけを個別のアーティファクトとしてアップロード
+      - name: Upload BGM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifact-BGM
+          path: temp_extracted/extracted_voice/BGM/
+          retention-days: 1
+
+      # 5. Voiceフォルダだけを個別のアーティファクトとしてアップロード
+      - name: Upload Voice Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifact-Voice
+          path: temp_extracted/extracted_voice/Voice/
+          retention-days: 1
+          
       - name: Upload Spoils as Artifact
         uses: actions/upload-artifact@v4
         with:
