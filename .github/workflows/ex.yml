@@ -23,22 +23,29 @@ jobs:
           large-packages: true
           swap-storage: true
 
+         
+      # 1. GitHub CLI を使って、特定の Run ID から17GBの成果物を直接ダウンロード
+      # ※ ://github.com の成果物を取得します
+      - name: Download Huge Artifact via GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p temp_extracted
           
-      # 1. 1つ目のワークフローから17GBの巨大成果物（Extracted-WAVs）をダウンロード
-      # ※ github.com/kakaomames/lost の同じリポジトリ内であればこれで落とせます
-      - name: Download Huge Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: Extracted-WAVs
-          path: temp_extracted/
+          echo "Downloading artifact from run 35188198230..."
+          # gh run artifact download [RUN_ID] --name [ARTIFACT_NAME] --dir [出力先]
+          gh run artifact download 35188198230 --name "Extracted-WAVs" --dir temp_extracted/
 
-      # 2. フォルダ構造の確認と、アップロード用の仕分け（必要に応じて）
-      # temp_extracted/extracted_voice/ の中に BGM と Voice があると想定しています
+      # 2. 正しくダウンロード・展開されているかフォルダ構造を確認
       - name: Check Folder Structure
         run: |
-          ls -R temp_extracted/
+          echo "=== Root Folder ==="
+          ls -la temp_extracted/
+          echo "=== Inside extracted_voice ==="
+          # もし直下にない場合は、ここを実際のパスに合わせて確認してください
+          ls -la temp_extracted/extracted_voice/ || ls -la temp_extracted/
 
-      # 3. BGMフォルダだけを個別のアーティファクトとしてアップロード
+      # 3. BGMフォルダだけを個別のZIPアーティファクトとしてアップロード (保管期間: 1日)
       - name: Upload BGM Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -46,7 +53,7 @@ jobs:
           path: temp_extracted/extracted_voice/BGM/
           retention-days: 1
 
-      # 4. Voiceフォルダだけを個別のアーティファクトとしてアップロード
+      # 4. Voiceフォルダだけを個別のZIPアーティファクトとしてアップロード (保管期間: 1日)
       - name: Upload Voice Artifact
         uses: actions/upload-artifact@v4
         with:
