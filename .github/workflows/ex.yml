@@ -32,6 +32,12 @@ jobs:
           echo "Downloading artifact from run 35188198230..."
           
           # 修正ポイント: -R でリポジトリを明示し、引数の位置を修正しました
+          curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $MY_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://github.com/kakaomames/lost/actions/runs/35188198230/artifacts/10485906213 \
+            -o artifact.zip
           curl -L "https://github.com/kakaomames/lost/actions/runs/35188198230/artifacts/10485906213" -o temp_extracted/
 
       # 3. フォルダ構造の確認
