@@ -1,18 +1,18 @@
 name: Split Large Artifact
 
 on:
-  # 手動実行、または1つ目のワークフロー完了後に自動実行したい場合は workflow_run を設定します
   workflow_dispatch: 
 
-permissions:       # 👈 これを追加
-  contents: write  # 👈 これを追加
+permissions:
+  contents: write
 
 jobs:
   split-and-upload:
     runs-on: ubuntu-latest
     steps:
     
-      # 👇 これを一番最初に追加！不要なツールを削除して約30GB以上の空きを作ります
+      # 1. 2分間かけて安全に30GB以上の空き容量を確保
+      # (17GBのダウンロード・解凍・再圧縮に耐えるディスクを作ります)
       - name: Free Disk Space (Reclaim ~30GB)
         uses: jlumbroso/free-disk-space@main
         with:
@@ -23,33 +23,26 @@ jobs:
           large-packages: true
           swap-storage: true
 
-         
-      # 1. GitHub CLI を使って、特定の Run ID から17GBの成果物を直接ダウンロード
-      # ※ ://github.com の成果物を取得します
-            # 2. GitHub CLI を使って、特定の Run ID から17GBの成果物をダウンロード
+      # 2. GitHub CLI でリポジトリを明示して17GBの成果物を確実にダウンロード
       - name: Download Huge Artifact via GitHub CLI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p temp_extracted
           echo "Downloading artifact from run 35188198230..."
-          echo ""
-          gh --help
-          echo ""
-          # 修正箇所: artifact を削り、引数の順番を調整しました
-          gh run download 35188198230 --name "Extracted-WAVs" --dir temp_extracted/
+          
+          # 修正ポイント: -R でリポジトリを明示し、引数の位置を修正しました
+          gh run download 35188198230 -R kakaomames/lost --name "Extracted-WAVs" --dir temp_extracted/
 
-
-      # 2. 正しくダウンロード・展開されているかフォルダ構造を確認
+      # 3. フォルダ構造の確認
       - name: Check Folder Structure
         run: |
           echo "=== Root Folder ==="
           ls -la temp_extracted/
           echo "=== Inside extracted_voice ==="
-          # もし直下にない場合は、ここを実際のパスに合わせて確認してください
           ls -la temp_extracted/extracted_voice/ || ls -la temp_extracted/
 
-      # 3. BGMフォルダだけを個別のZIPアーティファクトとしてアップロード (保管期間: 1日)
+      # 4. BGMフォルダだけを個別のアーティファクトとしてアップロード
       - name: Upload BGM Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -57,7 +50,7 @@ jobs:
           path: temp_extracted/extracted_voice/BGM/
           retention-days: 1
 
-      # 4. Voiceフォルダだけを個別のZIPアーティファクトとしてアップロード (保管期間: 1日)
+      # 5. Voiceフォルダだけを個別のアーティファクトとしてアップロード
       - name: Upload Voice Artifact
         uses: actions/upload-artifact@v4
         with:
