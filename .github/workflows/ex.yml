@@ -23,23 +23,41 @@ jobs:
           large-packages: true
           swap-storage: true
 
-      # 2. GitHub CLI でリポジトリを明示して17GBの成果物を確実にダウンロード
-      - name: Download Huge Artifact via GitHub CLI
+
+      # 2. URLを分解して結合し、安全にcurlでダウンロードして解凍
+      - name: Download Huge Artifact via curl
         env:
-          # 👈 ここを自動トークンから、登録したシークレット(PAT)に変更しました！
-          GH_TOKEN: ${{ secrets.MY_DOWNLOAD_TOKEN }}
+          MY_TOKEN: ${{ secrets.MY_DOWNLOAD_TOKEN }}
         run: |
           mkdir -p temp_extracted
-          echo "Downloading artifact from run 35188198230..."
-          
-          # 修正ポイント: -R でリポジトリを明示し、引数の位置を修正しました
+          echo "Processing download request..."
+
+          # URLのパーツを分解して定義
+          API_HOST="api"
+          DOMAIN="github.com"
+          REPO_PATH="repos/kakaomames/lost"
+          TARGET_TYPE="actions/artifacts"
+          ART_ID="10485906213"
+          FILE_EXT="zip"
+
+          # 変数を統合して正しいAPIのURLを生成
+          # (https://github.com)
+          FULL_API_URL="https://${API_HOST}.${DOMAIN}/${REPO_PATH}/${TARGET_TYPE}/${ART_ID}/${FILE_EXT}"
+
+          echo "Fetching data..."
+          # 統合したURLを使ってcurlを実行
           curl -L \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $MY_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://github.com/kakaomames/lost/actions/runs/35188198230/artifacts/10485906213 \
+            "$FULL_API_URL" \
             -o artifact.zip
-          # curl -L "https://github.com/kakaomames/lost/actions/runs/35188198230/artifacts/10485906213" -o artifact.zip
+
+          echo "Unzipping 17GB artifact..."
+          unzip -q artifact.zip -d temp_extracted/
+          
+          # 容量節約のため元のZIPは即座に削除
+          rm artifact.zip
 
       # 3. フォルダ構造の確認
       - name: Check Folder Structure
