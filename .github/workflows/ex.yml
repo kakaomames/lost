@@ -26,15 +26,19 @@ jobs:
          
       # 1. GitHub CLI を使って、特定の Run ID から17GBの成果物を直接ダウンロード
       # ※ ://github.com の成果物を取得します
+            # 2. GitHub CLI を使って、特定の Run ID から17GBの成果物をダウンロード
       - name: Download Huge Artifact via GitHub CLI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p temp_extracted
-          
           echo "Downloading artifact from run 35188198230..."
-          # gh run artifact download [RUN_ID] --name [ARTIFACT_NAME] --dir [出力先]
-          gh run artifact download 35188198230 --name "Extracted-WAVs" --dir temp_extracted/
+          echo ""
+          gh --help
+          echo ""
+          # 修正箇所: artifact を削り、引数の順番を調整しました
+          gh run download 35188198230 --name "Extracted-WAVs" --dir temp_extracted/
+
 
       # 2. 正しくダウンロード・展開されているかフォルダ構造を確認
       - name: Check Folder Structure
